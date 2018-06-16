@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, ImageBackground } from 'react-native';
-import { Container, Header, Content, Button, Tab, Tabs, Item, Icon, Input, Card, CardItem, Left, Right, Thumbnail, Body } from 'native-base';
+import { StyleProvider, Container, Header, Content, Button, Tab, Tabs, Item, Icon, Input, Card, CardItem, Left, Right, Thumbnail, Body } from 'native-base';
+
+import getTheme from '../../native-base-theme/components';
+import variables from '../../native-base-theme/variables';
 
 export default class Tab1Screen extends React.Component {
   constructor(props){
@@ -28,9 +31,10 @@ export default class Tab1Screen extends React.Component {
 
   render() {
     return (
-      <Container>
+      <StyleProvider style={getTheme(variables)}>
+      <Container style={{ backgroundColor: '#30374a' }}>
             <Content>
-        <Item style={{ paddingLeft: 10 }}>
+        <Item rounded style={{ paddingLeft: 10, height: 35, backgroundColor: 'white', marginTop:20, marginRight:20, marginBottom:20, marginLeft:20 }}>
           <Icon name="ios-search" />
           <Input placeholder="Search" />
         </Item>
@@ -40,8 +44,8 @@ export default class Tab1Screen extends React.Component {
         })
         }
 
-        <Tabs initialPage={0}>
-          <Tab heading="Hot">
+        <Tabs initialPage={0} tabStyle={{ backgroundColor: '#fff', borderBottomWidth: 0 }}>
+          <Tab heading="Hot" style={{ backgroundColor: '#30374a' }}>
               <Card>
                 <CardItem cardBody>
                   <ImageBackground rkCardImg source={require('../../image/style.jpg')} style={s.backgroundImage}>
@@ -66,6 +70,7 @@ export default class Tab1Screen extends React.Component {
         </Tabs>
             </Content>
       </Container>
+      </StyleProvider>
     );
   }
 }
@@ -73,9 +78,12 @@ export default class Tab1Screen extends React.Component {
 const s = StyleSheet.create({
   backgroundImage: {
       flex: 1,
-      marginLeft: -1,
-      marginRight: -1,
-      height: 130
+      marginLeft: -2,
+      marginRight: -2,
+      marginTop: -2,
+      marginBottom: -2,
+      height: 130,
+      backgroundColor: 'black',
   },
   overlay: {
     position: 'absolute',
