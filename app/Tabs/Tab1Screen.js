@@ -1,32 +1,110 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, Image, StyleSheet, ImageBackground, AsyncStorage } from 'react-native';
 import { StyleProvider, Container, Header, Content, Button, Tab, Tabs, Item, Icon, Input, Card, CardItem, Left, Right, Thumbnail, Body } from 'native-base';
 
 import getTheme from '../../native-base-theme/components';
 import variables from '../../native-base-theme/variables';
 
-export default class Tab1Screen extends React.Component {
-  constructor(props){
-    super(props);
-    this.state ={ isLoading: true, dataSource: []}
-  }
+async function fetchCoinInfo(self){
+  await fetch('https://www.cryptocompare.com/api/data/coinlist/')
+    .then((response) => response.json())
+    .then((responseJson) => {
+      self.setState({
+        token: "",
+        coin_img: responseJson.BaseImageUrl,
+        arr_coin: responseJson.Data,
+      });
+    })
+    .catch((error) =>{
+      console.error(error);
+    });
+}
 
-  componentWillMount(){
-    return fetch('https://facebook.github.io/react-native/movies.json')
+async function fetchCoinMarketCal(self){
+  var token = "";
+  var URL_getToken = "https://api.coinmarketcal.com/oauth/v2/token?grant_type=client_credentials&client_id=894_5fuoelisrd0kow0so840cs0gog0gskcckw8kkwcgcgkokcs4cw&client_secret=1prvzyo2uwkkw4w88k8ogssw0cg8s4ccgw80s0goco44scwwws";
+  var URL_getEvents = "https://api.coinmarketcal.com/v1/events?access_token=";
+  var nowTimeStamp = Math.floor(Date.now() / 1000);
+
+  console.log("AsyncStorage");
+  await AsyncStorage.getItem("CoinMarketCal").then((value) => {
+    console.log("AsyncStorage2");
+    var obj = JSON.parse(value);
+    if(obj){
+      if((nowTimeStamp - obj.timestamp) < 43200){  //12 hours
+        token = obj.token;
+        console.log("AsyncStorage3");
+      }
+    }
+  }).done();
+
+  console.log("token",token);
+  if(token == ""){
+    await fetch(URL_getToken)
       .then((response) => response.json())
       .then((responseJson) => {
+        token = responseJson.access_token;
+        console.log(token);
 
-        this.setState({
-          isLoading: false,
-          dataSource: responseJson.movies,
-        }, function(){
-
-        });
-
+        
+        var obj = {
+          token: token,
+          timestamp: nowTimeStamp
+        };
+        AsyncStorage.setItem("CoinMarketCal", JSON.stringify(obj));
       })
       .catch((error) =>{
         console.error(error);
       });
+  }
+
+  await fetch(URL_getEvents+token)
+    .then((response) => response.json())
+    .then((responseJson) => {
+      if(responseJson){
+        self.setState({
+          arr_events: responseJson.slice(0,5)
+        });
+      }
+      console.log(self.state.arr_events);
+    })
+    .catch((error) =>{
+      console.error(error);
+    });
+}
+
+export default class Tab1Screen extends React.Component {
+  constructor(props){
+    super(props);
+    this.state = { 
+      coin_img: "",
+      arr_coin: [],
+      arr_events: []
+    }
+  }
+
+  async componentWillMount(){
+    console.log("componentWillMount");
+    await fetchCoinMarketCal(this);
+    await fetchCoinInfo(this);
+    console.log("done fetch");
+    var arr_events = this.state.arr_events;
+    var coin_img = this.state.coin_img;
+    var arr_coin = this.state.arr_coin;
+
+    await arr_events.map(function(event) {
+      var coin_symbol = event.coins[event.coins.length-1].symbol;
+      if(arr_coin[coin_symbol]){
+        var logo_url = coin_img + arr_coin[coin_symbol].ImageUrl;
+        event.logo_url = logo_url;
+      }else{
+        event.logo_url = "";
+      }
+    })
+
+    this.setState({
+      arr_events: arr_events
+    });
   }
 
   render() {
@@ -34,38 +112,43 @@ export default class Tab1Screen extends React.Component {
       <StyleProvider style={getTheme(variables)}>
       <Container style={{ backgroundColor: '#30374a' }}>
             <Content>
-        <Item rounded style={{ paddingLeft: 10, height: 35, backgroundColor: 'white', marginTop:20, marginRight:20, marginBottom:20, marginLeft:20 }}>
+        <Item rounded style={{ paddingLeft: 10, height: 30, backgroundColor: 'white', marginTop:20, marginRight:20, marginBottom:5, marginLeft:20 }}>
           <Icon name="ios-search" />
           <Input placeholder="Search" />
         </Item>
-        {
-        this.state.dataSource.map(function(data, key) {
-           return <Text key={key}>{data.title}</Text>
-        })
-        }
-
+        <Text>{this.state.myKey}</Text>
         <Tabs initialPage={0} tabStyle={{ backgroundColor: '#fff', borderBottomWidth: 0 }}>
           <Tab heading="Hot" style={{ backgroundColor: '#30374a' }}>
-              <Card>
-                <CardItem cardBody>
-                  <ImageBackground rkCardImg source={require('../../image/style.jpg')} style={s.backgroundImage}>
-                    <View style={s.overlay}/>
+            {
+              this.state.arr_events.map(function(data, key) {
+                const card = (
+                    <Card key={key} style={{ marginLeft: -2,marginRight: -2, marginBottom: -6, backgroundColor: '#30374a' }}>
+                      <CardItem cardBody>
+                        <ImageBackground rkCardImg source={(data.proof) ? {uri:data.proof} : require('../../image/crypto_banner.jpg')} style={s.backgroundImage}>
+                          <View style={s.overlay}/>
 
-                    <Left style={s.img_text}>
-                      <Thumbnail small source={require('../../image/style.jpg')} />
-                      <Body>
-                        <Text style={{ color: 'white' }}> quick brown fox jumps over the lazy dog</Text>
-                      </Body>
-                    </Left>
-                  </ImageBackground>
-                </CardItem>
-              </Card>
+                          <Left style={s.img_text}>
+                            <Thumbnail small source={(data.logo_url) ? {uri:data.logo_url} : require('../../image/crypto_banner.jpg')} />
+                            <Body>
+                              <Text style={{ color: 'white' }}> {data.coins[data.coins.length-1].symbol + " - " +data.title}</Text>
+                            </Body>
+                          </Left>
+                        </ImageBackground>
+                      </CardItem>
+                    </Card>
+                  )
+                 return card
+              })
+            }
           </Tab>
           <Tab heading="New">
             <Text>tab2</Text>
           </Tab>
           <Tab heading="Upcoming">
             <Text>tab3</Text>
+          </Tab>
+          <Tab heading="Past">
+            <Text>tab4</Text>
           </Tab>
         </Tabs>
             </Content>
@@ -80,9 +163,9 @@ const s = StyleSheet.create({
       flex: 1,
       marginLeft: -2,
       marginRight: -2,
-      marginTop: -2,
+      marginTop: -3,
       marginBottom: -2,
-      height: 130,
+      height: 150,
       backgroundColor: 'black',
   },
   overlay: {
@@ -96,9 +179,8 @@ const s = StyleSheet.create({
   },
   img_text: {
     marginTop: 'auto',
-    color: 'white',
-    paddingLeft: 10,
-    paddingBottom: 10,
+    paddingLeft: 20,
+    paddingBottom: 20,
     position: 'absolute',
     right: 0,
     bottom: 0,

@@ -30,7 +30,7 @@ const Tab1 = createStackNavigator(
       screen: Tab1Screen,
       navigationOptions: {
         headerLeft: null,
-        headerTitle: "Tab 1 Screen"
+        headerTitle: "Coin Calendar"
       }
     },
     Tab1Details: {
@@ -134,7 +134,7 @@ const TabRoutes = TabNavigator(
     tabBarOptions: {
       showLabel: false,
       activeTintColor: "#c994ff",
-      inactiveTintColor: "#gray",
+      inactiveTintColor: "#30374a",
       style: {
         height: 50,
         paddingVertical: 5,
@@ -154,6 +154,7 @@ const TabRoutes = TabNavigator(
   }
 );
 
+//lightlightgray = #7d808f
 //lightgray = #575d6d
 //darkgray = #30374a
 //purple = #c994ff
